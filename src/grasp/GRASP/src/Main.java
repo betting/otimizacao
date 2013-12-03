@@ -27,7 +27,7 @@ public class Main {
 		int[][] solucoes = new int[num_solucoes_vizinhanca][tarefas];
 
 		// matriz de tarefas x maquinas + tempo total
-		int[][] matriz = new int[tarefas][maquinas];
+		int[][] matrizMaqsOps = new int[tarefas][maquinas];
 
 		// vetor com o tempo total de execução de cada tarefa
 		int[] total = new int[tarefas];
@@ -41,8 +41,8 @@ public class Main {
 		for (int i = 0; i < tarefas; i++) {
 			total[i] = 0;
 			for (int j = 0; j < maquinas; j++) {
-				matriz[i][j] = scan.nextInt();
-				total[i] += matriz[i][j]; // soma total
+				matrizMaqsOps[i][j] = scan.nextInt();
+				total[i] += matrizMaqsOps[i][j]; // soma total
 
 			}
 		}
@@ -83,13 +83,13 @@ public class Main {
 				probabilidades = calculaProbabilidades(rank);
 
 				// solucoes[i][j] =
-				solucoes[0][j] = escolheRandomicoComProbabilidade(probabilidades);
+				solucoes[i][j] = escolheRandomicoComProbabilidade(probabilidades);
 
 				// System.out.println("Matriz solucoes: ");
 				// imprimeMatriz(solucoes);
 
 				// atribui -1 para eliminar a tarefa ja adicionada
-				totalIterativo[solucoes[0][j]] = -1;
+				totalIterativo[solucoes[i][j]] = -1;
 
 				// System.out.println("Vetor Total: ");
 				// imprimeVetor(totalIterativo);
@@ -99,8 +99,11 @@ public class Main {
 				// FASE DE BUSCA LOCAL
 
 			}
+
+			System.out.print("Solucao: ");
+			imprimeVetor(solucoes[i]);
 			System.out.println("Makespan: "
-					+ calculaMakespan(matriz, solucoes[0]));
+					+ calculaMakespan(matrizMaqsOps, solucoes[i]));
 		}
 
 		scan.close();
@@ -109,37 +112,36 @@ public class Main {
 	// FUNÇÕES//////////////////////////////////////////////////////////////////
 	// /////////////////////////////////////////////////////////////////////////
 
-	int calculaMakespan(int m[][], int[] solucao) {
-		int[] v = new int[m[0].length];
-		v[0] = 0;
-		int shift = 0;
+	int calculaMakespan(int matrizMaqsOps[][], int[] solucao) {
+		int[][] shifts = new int[matrizMaqsOps.length][matrizMaqsOps[0].length];
 
-		// soma os tempos na ordem contida no vetor solucao
-		// for (int i = 0; i < solucao.length; i++) {
-		// for (int j = 0; j < m[0].length; j++) {
-		// if (i == 0 && j==0) {
-		// v[j] += m[solucao[i]][j];
-		// } else {
-		// v[j] += m[solucao[i]][j];
-		// }
-		//
-		// }
-		// imprimeVetor(v);
-		// }
+		for (int i = 0; i < shifts.length; i++) {
+			for (int j = 0; j < shifts[0].length; j++) {
+				if (i == 0) { // se é a primeira operação
+					if (j == 0) { // se é a primeira tarefa
+						shifts[0][0] = matrizMaqsOps[solucao[i]][0];
 
-		for (int i = 0; i < solucao.length - 1; i++)
-			shift += m[solucao[i]][0];
+					} else {// se são as demais tarefas
+						shifts[i][j] = shifts[i][j - 1]
+								+ matrizMaqsOps[solucao[i]][j];
+						
+					}
+				} else { // se são as demais operações (>0)
+					if (j == 0) { // se é a primeira tarefa
+						shifts[i][0] = shifts[i - 1][0]
+								+ matrizMaqsOps[solucao[i]][0];
 
-		// System.out.println("Shift: " + shift);
-
-		v[0] += m[solucao[solucao.length - 1]][0];
-		for (int i = 1; i < v.length; i++) {
-			v[i] += m[solucao[solucao.length - 1]][i] + v[i - 1];
+					} else { // se são as demais tarefas
+						shifts[i][j] = Math.max(shifts[i - 1][j],
+								shifts[i][j - 1])
+								+ matrizMaqsOps[solucao[i]][j];
+					}
+				}
+			}
+			imprimeVetor(shifts[i]);
 		}
 
-		// imprimeVetor(v);
-
-		return v[v.length - 1] + shift;
+		return shifts[matrizMaqsOps.length - 1][matrizMaqsOps[0].length - 1];
 	}
 
 	int[] tarefasDentroDoIntervaloRankeadas(int total[], double i1, double i2) {
