@@ -16,33 +16,38 @@ public class Main {
 
 	private void execute() {
 		final double alpha = 0.5;
-		final int num_solucoes_vizinhanca = 1;
-		int num_solucoes = 1;
+		// final int num_solucoes_vizinhanca = 2;
+		final int num_solucoes = 10;
 
 		// leitura dos valores iniciais
 		int maquinas = scan.nextInt();
 		int tarefas = scan.nextInt();
 
-		// matriz de solucoes
-		int[][] solucoes = new int[num_solucoes_vizinhanca][tarefas];
+		// matriz de solucoes encontradas
+		int[][] solucoes = new int[num_solucoes][tarefas];
 
-		// matriz de tarefas x maquinas + tempo total
-		int[][] matrizMaqsOps = new int[tarefas][maquinas];
+		// matriz de tarefas x maquinas
+		int[][] matrizMaqsTarefas = new int[tarefas][maquinas];
 
 		// vetor com o tempo total de execução de cada tarefa
-		int[] total = new int[tarefas];
+		int[] tempoTotalOp = new int[tarefas];
 
-		// leitura e descarte dos 1s
+		// matriz para calcular as medias de resultados
+		// i=0 primeiras soluções, i=1 melhores soluções
+		// i=2 tempos de execuções
+		int[][] resultados = new int[3][num_solucoes];
+
+		// leitura e descarte dos 1s do arquivo de entrada
 		for (int i = 0; i < maquinas - 1; i++) {
 			scan.nextInt();
 		}
 
-		// leitura da matriz
+		// leitura da matriz de entrada
 		for (int i = 0; i < tarefas; i++) {
-			total[i] = 0;
+			tempoTotalOp[i] = 0;
 			for (int j = 0; j < maquinas; j++) {
-				matrizMaqsOps[i][j] = scan.nextInt();
-				total[i] += matrizMaqsOps[i][j]; // soma total
+				matrizMaqsTarefas[i][j] = scan.nextInt();
+				tempoTotalOp[i] += matrizMaqsTarefas[i][j]; // soma total
 
 			}
 		}
@@ -52,20 +57,24 @@ public class Main {
 		// System.out.println(calculaMakespan(matriz, teste));
 
 		// RESOLUÇÃO////////////////////////////
-		//
+		// ////////////////////////////////////
 
 		// FASE DE CONSTRUÇÃO
 		for (int i = 0; i < num_solucoes; i++) {
-			int[] totalIterativo = Arrays.copyOf(total, total.length);
+			// inicia contagem de tempo de execução do GRASP
+			long duracaoInicio = System.currentTimeMillis();
 
+			int[] tempoTotalOpIterativo = Arrays.copyOf(tempoTotalOp,
+					tempoTotalOp.length);
+
+			//
 			for (int j = 0; j < tarefas; j++) {
-				int range = maximoVetor(totalIterativo)
-						- minimoVetor(totalIterativo);
+				int range = maximoVetor(tempoTotalOpIterativo)
+						- minimoVetor(tempoTotalOpIterativo);
 				double width = range * alpha;
 
 				double[] rcl = new double[2];
 				double[] probabilidades = new double[tarefas];
-
 				int[] rank = new int[tarefas];
 
 				for (int k = 0; k < rank.length; k++) {
@@ -73,44 +82,125 @@ public class Main {
 					probabilidades[k] = 0;
 				}
 
-				rcl[0] = minimoVetor(totalIterativo);
-				rcl[1] = minimoVetor(totalIterativo) + width;
+				rcl[0] = minimoVetor(tempoTotalOpIterativo);
+				rcl[1] = minimoVetor(tempoTotalOpIterativo) + width;
 
 				// System.out.println(rcl[0] + " " + rcl[1] + "\n");
 
-				rank = tarefasDentroDoIntervaloRankeadas(totalIterativo,
+				rank = tarefasDentroDoIntervaloRankeadas(tempoTotalOpIterativo,
 						rcl[0], rcl[1]);
+
 				probabilidades = calculaProbabilidades(rank);
 
-				// solucoes[i][j] =
+				// System.out.println("Probabilidades:");
+				// imprimeVetor(probabilidades);
+
 				solucoes[i][j] = escolheRandomicoComProbabilidade(probabilidades);
 
 				// System.out.println("Matriz solucoes: ");
 				// imprimeMatriz(solucoes);
 
 				// atribui -1 para eliminar a tarefa ja adicionada
-				totalIterativo[solucoes[i][j]] = -1;
+				tempoTotalOpIterativo[solucoes[i][j]] = -1;
 
 				// System.out.println("Vetor Total: ");
 				// imprimeVetor(totalIterativo);
 
 				// System.out.println();
 
-				// FASE DE BUSCA LOCAL
-
 			}
 
-			System.out.print("Solucao: ");
-			imprimeVetor(solucoes[i]);
-			System.out.println("Makespan: "
-					+ calculaMakespan(matrizMaqsOps, solucoes[i]));
+			// FASE DE BUSCA LOCAL
+			// numero de possiveis vizinhos é a PA do tamanho do vetor Solucao
+			int[][] vizinhanca = new int[pa(solucoes[i].length - 1)][solucoes[i].length];
+			int[] makespans = new int[vizinhanca.length];
+			int indiceViz = 0;
+
+			// CRIA VIZINHOS
+			for (int v = 0; v <= vizinhanca[0].length - 2; v++) {
+				// System.out.println("-------v = " + v);
+				for (int x = v + 1; x <= vizinhanca[0].length - 1; x++) {
+					// System.out.println("x = " + x);
+					vizinhanca[indiceViz] = Arrays.copyOf(solucoes[i],
+							solucoes[i].length);
+					// System.out.print("S: ");
+					// imprimeVetor(solucoes[0]);
+
+					// TROCA
+					int temp = vizinhanca[indiceViz][x];
+					vizinhanca[indiceViz][x] = vizinhanca[indiceViz][v];
+					vizinhanca[indiceViz][v] = temp;
+
+					// System.out.print("V: ");
+					// imprimeVetor(vizinhanca[indiceViz]);
+					// System.out.println();
+
+					makespans[indiceViz] = calculaMakespan(matrizMaqsTarefas,
+							vizinhanca[indiceViz]);
+
+					// PRIMEIRA SOLUÇÃO
+					if (indiceViz == 0) {
+						// System.out.println("Primeira solucao: "
+						// + makespans[indiceViz]);
+
+						// GUARDA PRIMEIRO RESULTADO NA MATRIZ DE RESULTADOS
+						resultados[0][i] = makespans[indiceViz];
+					}
+
+					indiceViz++;
+				}
+			}
+
+			// // IMPRIME MELHOR SOLUÇÃO
+			// System.out.println("Melhor solucao: " + minimoVetor(makespans));
+
+			// GUARDA MELHOR RESULTADO NA MATRIZ DE RESULTADOS
+			resultados[1][i] = minimoVetor(makespans);
+
+			// termina contagem de tempo do GRASP
+			long duracaoFim = System.currentTimeMillis();
+
+			// // IMPRIME DURAÇÃO DE UMA EXECUÇÃO DO GRASP
+			// System.out.println("Duracao: " + (duracaoFim - duracaoInicio)
+			// + "ms");
+
+			// GUARDA DURAÇÃO NA MATRIZ DE RESULTADOS
+			resultados[2][i] = (int) (duracaoFim - duracaoInicio);
+
+			// System.out.print("Solucao: ");
+			// imprimeVetor(solucoes[i]);
+			// System.out.println("Makespan: "
+			// + calculaMakespan(matrizMaqsTarefas, solucoes[i]));
+
+			// System.out.println();
 		}
+
+		// System.out.println("Resultados: ");
+		// imprimeMatriz(resultados);
+
+		System.out.println("Medias");
+		System.out.println("Primeira solucao: " + mediaVetor(resultados[0]));
+		System.out.println("Melhor solucao: " + minimoVetor(resultados[1]));
+		System.out.println("Duracao: " + mediaVetor(resultados[2]) + " ms");
 
 		scan.close();
 	}
 
 	// FUNÇÕES//////////////////////////////////////////////////////////////////
-	// /////////////////////////////////////////////////////////////////////////
+	// ////////////////////////////////////////////////////////////////////////
+
+	int mediaVetor(int[] vetor) {
+		int media = 0;
+
+		for (int i = 0; i < vetor.length; i++)
+			media += vetor[i];
+
+		return media / vetor.length;
+	}
+
+	int pa(int n) {
+		return (n * (n + 1)) / 2;
+	}
 
 	int calculaMakespan(int matrizMaqsOps[][], int[] solucao) {
 		int[][] shifts = new int[matrizMaqsOps.length][matrizMaqsOps[0].length];
@@ -124,7 +214,7 @@ public class Main {
 					} else {// se são as demais tarefas
 						shifts[i][j] = shifts[i][j - 1]
 								+ matrizMaqsOps[solucao[i]][j];
-						
+
 					}
 				} else { // se são as demais operações (>0)
 					if (j == 0) { // se é a primeira tarefa
@@ -138,7 +228,7 @@ public class Main {
 					}
 				}
 			}
-			imprimeVetor(shifts[i]);
+			// imprimeVetor(shifts[i]);
 		}
 
 		return shifts[matrizMaqsOps.length - 1][matrizMaqsOps[0].length - 1];
@@ -245,11 +335,10 @@ public class Main {
 		// imprimeMatriz(intervalos);
 
 		// calcula uma probabilidade
-
 		Random r = new Random();
 		double entrezeroeum = r.nextDouble();
 
-		// escolhe elemento na faixa na probabilidade
+		// escolhe elemento dentro da faixa
 		for (indice = 0; indice < intervalos.length
 				&& intervalos[indice][1] != 0
 				&& intervalos[indice][1] < entrezeroeum; indice++) {
