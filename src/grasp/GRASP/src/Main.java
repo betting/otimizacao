@@ -16,7 +16,6 @@ public class Main {
 
 	private void execute() {
 		final double alpha = 0.5;
-		// final int num_solucoes_vizinhanca = 2;
 		final int num_solucoes = 10;
 
 		// leitura dos valores iniciais
@@ -33,7 +32,8 @@ public class Main {
 		int[] tempoTotalOp = new int[tarefas];
 
 		// matriz para calcular as medias de resultados
-		// i=0 primeiras soluções, i=1 melhores soluções
+		// i=0 primeiras soluções
+		// i=1 melhores soluções
 		// i=2 tempos de execuções
 		int[][] resultados = new int[3][num_solucoes];
 
@@ -67,7 +67,6 @@ public class Main {
 			int[] tempoTotalOpIterativo = Arrays.copyOf(tempoTotalOp,
 					tempoTotalOp.length);
 
-			//
 			for (int j = 0; j < tarefas; j++) {
 				int range = maximoVetor(tempoTotalOpIterativo)
 						- minimoVetor(tempoTotalOpIterativo);
@@ -107,7 +106,6 @@ public class Main {
 				// imprimeVetor(totalIterativo);
 
 				// System.out.println();
-
 			}
 
 			// FASE DE BUSCA LOCAL
