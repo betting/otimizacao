@@ -1,95 +1,20 @@
-/*  Tempo de fluxo no flow shop permutacional */
+param m, integer, >=1; # Numero de maquinas
+set Machines:={1..m};  # Conjunto de maquinas
+param n, integer, >=1; # Numero de itens
+set Items:={1..n};  # Conjunto de itens
 
-param m, integer, >=1;  # Numero de maquinas
-param n, integer, >=1;  # Numero de itens
+param d{i in Items, j in Machines} >=0;  # Tempo para que uma máquina k leva para processar um item l
+param B:=1+sum{i in Items, j in Machines} d[i,j]; 
 
-param B{ r in 1..m, j in 1..n } >=0;
-param T{ r in 1..m, j in 1..n } >=0;
-param Z{ i in 1..n, j in 1..n } >=0;
+var t{i in Items, j in Machines} >=0; # Tempo inicial do processamento do item l na maquina k
+var makespan >= 0;
+var y{j in Machines, i in Items, k in Items: i<k}, binary;
 
-# Funcao objetiva e suas restricoes
-minimize pfsp: B[m,n] + sum { i in 1..n } (T[m,i]*Z[i,n]);
-#minimize pfsp: B[5,20] + sum { i in 1..n } (T[5,i]*Z[i,20]);
-
-subject to R1 { i in 1..n } : sum { j in 1..n } Z[i,j] = 1;
-subject to R2 { j in 1..n } : sum { i in 1..n } Z[i,j] = 1;
-subject to R3 { j in 1..(n-1) }: B[1,j] + sum { i in 1..n } (T[1,i]*Z[i,j]) = B[1,j+1];
-subject to R4 : B[1,1] = 0;
-subject to R5 { r in 1..(m-1) } : B[r,1] + sum  { i in 1..n } (T[r,i]*Z[i,1]) = B[r+1,1];
-subject to R6 { r in 1..(m-1), j in 2..n} : B[r,j] + sum { i in 1..n } (T[r,i]*Z[i,j]) <= B[r+1,j];
-subject to R7 { r in 2..m, j in 1..(n-1)} : B[r,j] + sum { i in 1..n } (T[r,i]*Z[i,j]) <= B[r,j+1];
-
-data;
-
-param m:=5; # the number of machine
-
-param n:=20; # the number of items
-
-/* the times dij required to perform the work on item i by machine j */
-param T :
-  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 :=
-1 54 83 15 71 77 36 53 38 27 87 76 91 14 29 12 77 32 87 68 94
-2 79 3  11 99 56 70 99 60 5  56 3  61 73 75 47 14 21 86 5  77
-3 16 89 49 15 89 45 60 23 57 64 7  1  63 41 63 47 26 75 77 40
-4 66 58 31 68 78 91 13 59 49 85 85 9  39 41 56 40 54 77 51 31
-5 58 56 20 85 53 35 53 41 69 13 86 72 8  49 47 87 58 18 68 28;
-
-/*
-param T : 
-   1   2   3   4   5 :=
-1 54  79  16  66  58
-2 83   3  89  58  56
-3 15  11  49  31  20
-4 71  99  15  68  85
-5 77  56  89  78  53
-6 36  70  45  91  35
-7 53  99  60  13  53
-8 38  60  23  59  41
-9 27   5  57  49  69
-10 87  56  64  85  13
-11 76   3   7  85  86
-12 91  61   1   9  72
-13 14  73  63  39   8
-14 29  75  41  41  49
-15 12  47  63  56  47
-16 77  14  47  40  87
-17 32  21  26  54  58
-18 87  86  75  77  18
-19 68   5  77  51  68
-20 94  77  40  31  28;
-*/
-
-param B :
-
-   1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 :=
-1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-3  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-4  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
-5  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0;
-
-
-param Z :
-   1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 :=
-1  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1 
-2  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-3  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-4  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-5  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-6  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-7  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-8  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-9  1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-10 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-11 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-12 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-13 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-14 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-15 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-16 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-17 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-18 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-19 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1
-20 1 1 1 1 1 1 1 1 1  1  1  1  1  1  1  1  1  1  1  1;
+minimize flowshop: makespan;
+subject to R1 {i in Items, j in Machines:j<m}: t[i,j+1]>=t[i,j]+d[i,j]; # Sequencia do processamento (Tempo item processado
+                                                                        # na máquina 2 é maior que o tempo da maquina 1
+subject to R2 {j in Machines, i in Items, k in Items: i<k}: t[i,j]-t[k,j]+B*y[j,i,k]>=d[k,j];     # Apenas um elemento pode ser
+subject to R3 {j in Machines, i in Items, k in Items: i<k}: t[k,j]-t[i,j]+B*(1-y[j,i,k])>=d[i,j]; # processado por maquina
+subject to R4 {i in Items}: t[i,m]+d[i,m] <= makespan; # Makespan e o calculo do processamento de todos os itens na ultima maquina
 
 end;
